@@ -113,6 +113,18 @@ def parse_args():
 
 
 def get_sliding_window(info, sizes, gaps, img_rate_thr):
+    """
+    按照step切割，宽高最后的patch如果不足size，往回移动window，stop与width&height相等。
+    会造成x方向，y方向最后的一个patch和倒二的patch有大面积重复
+    Args:
+        info:
+        sizes:
+        gaps:
+        img_rate_thr:
+
+    Returns:
+
+    """
     eps = 0.01
     windows = []
     width, height = info['width'], info['height']
@@ -135,7 +147,7 @@ def get_sliding_window(info, sizes, gaps, img_rate_thr):
         stop = start + size
         windows.append(np.concatenate([start, stop], axis=1))
     windows = np.concatenate(windows, axis=0)
-
+    # img_in_wins clip 验证
     img_in_wins = windows.copy()
     img_in_wins[:, 0::2] = np.clip(img_in_wins[:, 0::2], 0, width)
     img_in_wins[:, 1::2] = np.clip(img_in_wins[:, 1::2], 0, height)
@@ -165,13 +177,29 @@ def get_window_obj(info, windows, iof_thr):
                 win_ann[k] = v[pos_inds]
             except TypeError:
                 win_ann[k] = [v[i] for i in pos_inds]
-        win_ann['trunc'] = win_iofs[pos_inds] < 1
+        win_ann['trunc'] = win_iofs[pos_inds] < 1 # 如果等于obj就是在这个patch上的，
         window_anns.append(win_ann)
     return window_anns
 
 
 def crop_and_save_img(info, windows, window_anns, img_dir, no_padding,
                       padding_value, filter_empty, save_dir, img_ext):
+    """
+
+    Args:
+        info:
+        windows:
+        window_anns:
+        img_dir:
+        no_padding: 如果patch大小小于window，则padding(3通道=0),补充到window大小
+        padding_value:
+        filter_empty:
+        save_dir:
+        img_ext:
+
+    Returns:
+
+    """
     img = cv2.imread(osp.join(img_dir, info['filename']))
     patch_infos = []
     for i in range(windows.shape[0]):
@@ -221,6 +249,8 @@ def single_split(arguments, sizes, gaps, img_rate_thr, iof_thr, no_padding,
     info, img_dir = arguments
     windows = get_sliding_window(info, sizes, gaps, img_rate_thr)
     window_anns = get_window_obj(info, windows, iof_thr)
+    print("Processing: {}".format(info["filename"]))
+    logger.info("Processing: {}".format(info["filename"]))
     patch_infos = crop_and_save_img(info, windows, window_anns, img_dir, no_padding,
                                     padding_value, filter_empty, save_dir, img_ext)
     assert patch_infos or (filter_empty and info['ann']['bboxes'].size == 0)

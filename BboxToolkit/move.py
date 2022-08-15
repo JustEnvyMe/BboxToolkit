@@ -5,6 +5,16 @@ from .transforms import bbox2type
 
 
 def translate(bboxes, x, y):
+    """
+    坐标系转为对应patch的
+    Args:
+        bboxes:
+        x: 负的patchx坐标
+        y: 负的patch
+
+    Returns:
+
+    """
     assert get_bbox_type(bboxes) != 'notype'
 
     if get_bbox_type(bboxes) == 'obb':
